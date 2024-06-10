@@ -22,6 +22,8 @@ class PlaywrightDriver(BaseDriver):
         width: int = 1080,
         height: int = 1080,
         user_data_dir: Optional[str] = None,
+        screenshot_type: str = "png",
+        screenshot_quality: int = 100,
     ):
         os.environ["PW_TEST_SCREENSHOT_NO_FONTS_READY"] = (
             "1"  # Allow playwright to take a screenshots even if the fonts won't load in head mode.
@@ -30,6 +32,14 @@ class PlaywrightDriver(BaseDriver):
         self.user_data_dir = user_data_dir
         self.width = 1080
         self.height = 1080
+        if screenshot_type not in ["png", "jpeg"]:
+            raise ValueError("screenshot_type must be either 'png' or 'jpeg'")
+        self.screenshot_type = screenshot_type
+        self.screenshot_quality = None
+        if self.screenshot_type == "jpeg":
+            if screenshot_quality < 0 or screenshot_quality > 100:
+                raise ValueError("screenshot_quality must be between 0 and 100")
+            self.screenshot_quality = screenshot_quality
         super().__init__(url, get_sync_playwright_page)
 
     # Before modifying this function, check if your changes are compatible with code_for_init which parses this code
@@ -90,7 +100,9 @@ class PlaywrightDriver(BaseDriver):
         return self.page
 
     def get_screenshot_as_png(self) -> bytes:
-        return self.page.screenshot(animations="disabled")
+        return self.page.screenshot(animations="disabled",
+                                    type=self.screenshot_type,
+                                    quality=self.screenshot_quality)
 
     def resize_driver(self, width: int, height: int) -> None:
         self.width = width
